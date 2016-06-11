@@ -1392,6 +1392,30 @@ Mac802_11::RetransmitDATA()
 	ch = HDR_CMN(pktTx_);
 	mh = HDR_MAC802_11(pktTx_);
 
+	static int AODVCount = 0;
+	if (ch->ptype() == PT_AODV)
+	{
+		if (AODVCount < 2) //retry 2 times
+		{
+			struct hdr_mac802_11 *dh;
+			dh = HDR_MAC802_11(pktTx_);
+			dh->dh_fc.fc_retry = 1;
+			AODVCount++;
+			rst_cw();
+			mhBackoff_.start(cw_, is_idle());
+		}
+		else
+		{
+			Packet::free(pktTx_);
+			pktTx_ = nullptr;
+			AODVCount = 0;
+			rst_cw();
+			mhBackoff_.start(cw_, is_idle());
+		}
+		
+		return;
+	}
+	
 	/*
 	 *  Broadcast packets don't get ACKed and therefore
 	 *  are never retransmitted.
