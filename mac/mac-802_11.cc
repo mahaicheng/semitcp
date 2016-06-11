@@ -2039,8 +2039,8 @@ bool Mac802_11::neighbour_congested()
 		pkt_cnt_l2++;
 	int pkt_total = pkt_cnt_l2 + p_aodv_agent->neighbor_length();
 	int neighborThreshold = p_to_prique->neighborThreshold();
-	bool congested = pkt_total >= neighborThreshold;
-	    return congested;
+	
+	return pkt_total >= neighborThreshold;
 }
 
 bool Mac802_11::local_congested()   //used by TCP to decide whether push packet or not

@@ -42,6 +42,7 @@
 #include <mac/mac-802_11.h>
 //class Mac802_11;
 #include <queue>
+#include <memory>
 using namespace std;
 
 /* max window size */
@@ -155,7 +156,7 @@ protected:
 	int no_dupack; ///SEMIDEBUG
 	#ifdef SEMITCP
 	Mac802_11* p_to_mac;
-	queue<ack_pkt *> ack_q;
+	queue<ack_pkt*> ack_q;
 	#endif
 };
 
