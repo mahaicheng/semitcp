@@ -288,7 +288,10 @@ public:
 	// Added by Sushmita to support event tracing
         void trace_event(char *, Packet *);
         EventTrace *et_;
+		
 	int maxACkQueueSize;
+	double maxACkQueueSizeTime;
+	int lastACKQueueSize;
 
 protected:
 	void	backoffHandler(void);

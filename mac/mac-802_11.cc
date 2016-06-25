@@ -219,8 +219,11 @@ Mac802_11::Mac802_11() :
     ACK_send(0),
     
     RTS_droped(0),
+    
     maxACkQueueSize(0),
-       
+    maxACkQueueSizeTime(0.0),
+    lastACKQueueSize(0),
+
 /*******MHC DEBUG***********/
 	///End SEMIDEBUG
 #ifdef SEMITCP
@@ -337,7 +340,9 @@ printf(" RTS_refuse_rate:\t%.2f%%\n", RTS_refuse_rate * 100.0);
 printf("    RTS_CTS_rate:\t%.2f%%\n", RTS_CTS_rate * 100.0);
 printf("  DATA_fail_rate:\t%.2f%%\n", DATA_fail_rate * 100.0);
 printf("all_success_rate:\t%.2f%%\n\n", all_success_rate * 100.0);
-printf(" maxAckQueueSize:\t%d\n\n", maxACkQueueSize);
+printf(" maxAckQueueSize:\t\t%d\n", maxACkQueueSize);
+printf("maxACkQueueSizeTime:\t%.2f\n", maxACkQueueSizeTime);
+printf("lastACKQueueSize:\t\t%d\n\n", lastACKQueueSize);
 
 	return TCL_OK;
     }   
@@ -1395,7 +1400,7 @@ Mac802_11::RetransmitDATA()
 	static int AODVCount = 0;
 	if (ch->ptype() == PT_AODV)
 	{
-		if (AODVCount < 2) //retry 2 times
+		if (AODVCount < 2) //retry 3 times
 		{
 			struct hdr_mac802_11 *dh;
 			dh = HDR_MAC802_11(pktTx_);

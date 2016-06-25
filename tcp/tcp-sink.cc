@@ -366,6 +366,15 @@ void TcpSink::ack(Packet* opkt)
         // printf("ACK %d ts %f\n", ntcp->seqno(), ntcp->ts_echo());
 	
 	///If the lower layer isn't congested, send the first packet in transport layer down, otherwise buffer the new ACK
+	
+	if (p_to_mac != nullptr && p_to_mac->maxACkQueueSize < ack_q.size())
+	{
+		p_to_mac->maxACkQueueSize = ack_q.size();
+		p_to_mac->maxACkQueueSizeTime = Scheduler::instance().clock();
+	}
+	if (p_to_mac != nullptr)
+		p_to_mac->lastACKQueueSize = ack_q.size();
+		
 	if(!p_to_mac->local_congested()) {
 		if(ack_q.size() > 0) {
 			Packet *pkt = ack_q.front()->ack();
@@ -390,8 +399,7 @@ void TcpSink::ack(Packet* opkt)
 		ack_pkt *tmp = new ack_pkt(npkt);
 		ack_q.push(tmp);
 		
-		if (p_to_mac != nullptr && p_to_mac->maxACkQueueSize < ack_q.size())
-			p_to_mac->maxACkQueueSize = ack_q.size();
+
 	}
 }
 
