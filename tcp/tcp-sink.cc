@@ -390,7 +390,7 @@ void TcpSink::ack(Packet* opkt)
 		} else
 			send(npkt, 0);
 	} else {
-		#define MAXACKQ_LEN 50000000 ///the size of transport layer queue
+		#define MAXACKQ_LEN 65 ///the size of transport layer queue
 		if(ack_q.size() >= MAXACKQ_LEN) {		
 			drop(ack_q.front()->ack(), "ACK_Q_FULL");
 			delete ack_q.front();

@@ -1400,7 +1400,7 @@ Mac802_11::RetransmitDATA()
 	static int AODVCount = 0;
 	if (ch->ptype() == PT_AODV)
 	{
-		if (AODVCount < 2) //retry 3 times
+		if (AODVCount < 3) //retry 3 times
 		{
 			struct hdr_mac802_11 *dh;
 			dh = HDR_MAC802_11(pktTx_);
