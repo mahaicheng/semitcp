@@ -80,13 +80,13 @@ class TcpSink;
 
 #define MY_ROUTE_TIMEOUT        10                      	// 100 seconds
 #define ACTIVE_ROUTE_TIMEOUT    10				// 50 seconds
-#define REV_ROUTE_LIFE          6				// 5  seconds
-#define BCAST_ID_SAVE           6				// 3 seconds
+#define REV_ROUTE_LIFE          6				// 5  seconds 	?
+#define BCAST_ID_SAVE           6				// 3 seconds 	?
 
 
 // No. of times to do network-wide search before timing out for 
 // MAX_RREQ_TIMEOUT sec. 
-#define RREQ_RETRIES            3  
+#define RREQ_RETRIES            3 	// 原始值是3  
 // timeout after doing network-wide search RREQ_RETRIES times
 #define MAX_RREQ_TIMEOUT	10.0 //sec
 

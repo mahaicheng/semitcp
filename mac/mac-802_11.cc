@@ -1397,10 +1397,10 @@ Mac802_11::RetransmitDATA()
 	ch = HDR_CMN(pktTx_);
 	mh = HDR_MAC802_11(pktTx_);
 
-	static int AODVCount = 0;
+	/*static int AODVCount = 0;
 	if (ch->ptype() == PT_AODV)
 	{
-		if (AODVCount < 3) //retry 3 times
+		if (AODVCount < 2) //retry 2 times
 		{
 			struct hdr_mac802_11 *dh;
 			dh = HDR_MAC802_11(pktTx_);
@@ -1419,7 +1419,7 @@ Mac802_11::RetransmitDATA()
 		}
 		
 		return;
-	}
+	}*/
 	
 	/*
 	 *  Broadcast packets don't get ACKed and therefore

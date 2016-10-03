@@ -121,10 +121,15 @@ void SemiTcpAgent::output (int seqno, int reason)
 
 
 #ifdef PARTIALACK
-        assert ( seqno <= t_seqno_ );
-        if ( seqno == t_seqno_ ) {
-                unacked.push_back ( seqno );
-		t_seqno_++;	//send a new packet
+        assert ( seqno <= (int)t_seqno_ );
+		//printf("seqno = %d\tt_seqno_ = %d\n", seqno, (int)t_seqno_);
+        if ( seqno == (int)t_seqno_ ) 
+		{
+			//printf("seqno = %d\tt_seqno_ = %d\n", seqno, (int)t_seqno_);
+			
+			unacked.push_back ( seqno );
+			//printf("send a new packet: %d\n", (int)t_seqno_);
+			t_seqno_++;	//send a new packet
         }
 #endif
 
@@ -262,6 +267,7 @@ void SemiTcpAgent::recv ( Packet *pkt, Handler* )
         }
 #endif
         Packet::free ( pkt );
+		send_much(0, 0, 0); 	// try to send a new packet every time when recv an ACK
 }
 
 ///Called when the retransimition timer times out
@@ -273,21 +279,22 @@ void SemiTcpAgent::timeout ( int tno )
 
         assert ( cwnd_ == -1 );
 
-        ///reset_rtx_timer(backoff)
         reset_rtx_timer ( 0 );
+		// NOTE: 首先考虑序列号最小的数据包
         if ( find ( seqnolist.begin(), seqnolist.end(), highest_ack_ + 1 ) == seqnolist.end() )
                 seqnolist.push_back ( highest_ack_ + 1 );
 }
-
 
 /*
  * send_much() is called by sendmsg which is call by application layer protocol,
  * when the app layer has data to send at first.
  */
 void SemiTcpAgent::send_much ( int force, int reason, int maxburst )
-{
+{	//尝试推送数据下去，如果下层不拥塞，就发送一个数据包下去。 在TCP中只要想推送数据下去的都要调用
+	//send_much函数来首先检查下层是否拥塞，然后才决定是否真正发送数据下去
         if ( !p_to_mac->local_congested() ) {
-                output ( t_seqno_, reason );
+			send_down();
+			//output ( t_seqno_, reason );
         }
 }
 
@@ -295,6 +302,9 @@ void SemiTcpAgent::send_much ( int force, int reason, int maxburst )
 //when forece == true, it means to send a packet down immediately
 void SemiTcpAgent::send_down ( bool force )
 {
+	//尝试推送数据下去
+		static int packet_size = 128;
+	
         int tmpseqno = -1;
         seqnolist.sort();
         if ( !seqnolist.empty() ) { 	//remove the acked packets
@@ -303,12 +313,31 @@ void SemiTcpAgent::send_down ( bool force )
                         seqnolist.remove ( tmpseqno );
                 } while ( tmpseqno <= last_ack_ && !seqnolist.empty() );
         }
+        
         if ( tmpseqno >= 0 && tmpseqno > highest_ack_ ) {
-                output ( tmpseqno, 0 ); 
+				//printf("send a retransmited packet: %d\n", tmpseqno);
+                output ( tmpseqno, 0 ); 	// 这是重传的数据包
         } else { 	
-                output ( t_seqno_, 0 );
+			if (unacked.size() < packet_size) 	// unacked的作用就在这里
+			{		
+				//printf("t_seqno_ = %d\thighest_ack_ = %d\tunack_size = %d\n", \
+				//(int)t_seqno_, (int)highest_ack_, (int)(t_seqno_ - highest_ack_)
+				//);	
+				//printf("send a new packet: %d\n", (int)t_seqno_);
+				//printf("unacked size: %d\n", unacked.size());				
+                output ( t_seqno_, 0 );		// 这是新发送的数据包
+			}
+			/*else
+			{
+				//printf("t_seqno_ = %d\thighest_ack_ = %d\tunack_size = %d\n", \
+				//(int)t_seqno_, (int)highest_ack_, (int)(t_seqno_ - highest_ack_)
+				//);
+				//printf("unacked size: %d\n", unacked.size());
+				//printf("can't send a packet: %d\n", (int)t_seqno_);
+			}*/
         }
 }
+
 void SemiTcpAgent::reset_rtx_timer ( int backoff )
 {
         if ( backoff )

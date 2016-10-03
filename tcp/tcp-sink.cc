@@ -276,10 +276,10 @@ void TcpSink::ack(Packet* opkt)
 	hdr_tcp *otcp = hdr_tcp::access(opkt);
 	hdr_ip *oiph = hdr_ip::access(opkt);
 
-		if( no_dupack && otcp->seqno() > acker_->Seqno()+1) 	// no dupack
-		{
-			return;
-		}
+	if( no_dupack && otcp->seqno() > acker_->Seqno()+1) 	// no dupack
+	{
+		return;
+	}
 
 	Packet* npkt = allocpkt();
 	// opkt is the "old" packet that was received
@@ -293,14 +293,14 @@ void TcpSink::ack(Packet* opkt)
 		// QuickStart code from Srikanth Sundarrajan.
 		hdr_qs *oqsh = hdr_qs::access(opkt);
 		hdr_qs *nqsh = hdr_qs::access(npkt);
-	        if (otcp->seqno() == 0 && oqsh->flag() == QS_REQUEST) {
-	                nqsh->flag() = QS_RESPONSE;
-	                nqsh->ttl() = (oiph->ttl() - oqsh->ttl()) % 256;
-	                nqsh->rate() = (oqsh->rate() < MWS) ? oqsh->rate() : MWS;
-	        }
-	        else {
-	                nqsh->flag() = QS_DISABLE;
-	        }
+		if (otcp->seqno() == 0 && oqsh->flag() == QS_REQUEST) {
+				nqsh->flag() = QS_RESPONSE;
+				nqsh->ttl() = (oiph->ttl() - oqsh->ttl()) % 256;
+				nqsh->rate() = (oqsh->rate() < MWS) ? oqsh->rate() : MWS;
+		}
+		else {
+				nqsh->flag() = QS_DISABLE;
+		}
 	}
 
 
