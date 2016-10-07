@@ -79,6 +79,6 @@ private:
 
         list<int> seqnolist; //the list of the packets needed to be retransmitted
         void reset_rtx_timer ( int backoff );
-        list<int> unacked; //a list of the unacked TCP seqences
+        //list<int> unacked; //a list of the unacked TCP seqences
 };
 #endif

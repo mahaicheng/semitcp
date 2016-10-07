@@ -90,7 +90,7 @@ void SemiTcpAgent::output (int seqno, int reason)
 
         ///record the number of unacked packets
         struct hdr_cmn* ch = HDR_CMN ( p );
-        ch->num_acked() = ( int ) t_seqno_ -1 - unacked.size();
+        //ch->num_acked() = ( int ) t_seqno_ -1 - unacked.size();
 
         hdr_tcp *tcph = hdr_tcp::access ( p );
         int databytes = hdr_cmn::access ( p )->size();
@@ -119,8 +119,12 @@ void SemiTcpAgent::output (int seqno, int reason)
         ++ndatapack_;
         ndatabytes_ += databytes;
 
-
-#ifdef PARTIALACK
+		if (seqno == (int)t_seqno_)
+		{
+			t_seqno_++;
+		}
+		
+/*#ifdef PARTIALACK
         assert ( seqno <= (int)t_seqno_ );
 		//printf("seqno = %d\tt_seqno_ = %d\n", seqno, (int)t_seqno_);
         if ( seqno == (int)t_seqno_ ) 
@@ -131,7 +135,7 @@ void SemiTcpAgent::output (int seqno, int reason)
 			//printf("send a new packet: %d\n", (int)t_seqno_);
 			t_seqno_++;	//send a new packet
         }
-#endif
+#endif*/
 
         if ( seqno > curseq_)
 	{
@@ -239,16 +243,21 @@ void SemiTcpAgent::recv ( Packet *pkt, Handler* )
                 return;
         }
         ++nackpack_;
-        if ( tcph->seqno() > highest_ack_ && tcph->reason() == 0 ) {
+        if ( tcph->seqno() > highest_ack_) {
                 if ( highest_ack_ + 1 > t_seqno_ ) {
                         t_seqno_ = highest_ack_ + 1;
                 }
                 highest_ack_ = tcph->seqno();
                 recv_newack_helper ( pkt ); 	
         }
+        else
+		{
+			seqnolist.push_back(highest_ack_+1);
+			cancel_rtx_timer();			
+		}
         
         //following codes process the situation when receive old ack
-#ifdef PARTIALACK
+/*#ifdef PARTIALACK
         if ( tcph->reason() == 0 ) { //Oridinary ack
                 //Update the unacked list
                 while ( !unacked.empty() && *unacked.begin() <= tcph->seqno() ) {
@@ -265,7 +274,7 @@ void SemiTcpAgent::recv ( Packet *pkt, Handler* )
                         highest_ack_ = tmp;
                 }
         }
-#endif
+#endif*/
         Packet::free ( pkt );
 		send_much(0, 0, 0); 	// try to send a new packet every time when recv an ACK
 }
@@ -318,7 +327,7 @@ void SemiTcpAgent::send_down ( bool force )
 				//printf("send a retransmited packet: %d\n", tmpseqno);
                 output ( tmpseqno, 0 ); 	// 这是重传的数据包
         } else { 	
-			if (unacked.size() < packet_size) 	// unacked的作用就在这里
+			if ((t_seqno_- highest_ack_) < packet_size) 	
 			{		
 				//printf("t_seqno_ = %d\thighest_ack_ = %d\tunack_size = %d\n", \
 				//(int)t_seqno_, (int)highest_ack_, (int)(t_seqno_ - highest_ack_)

@@ -154,7 +154,6 @@ DeferTimer::start(double time)
 	ROUND_TIME();
 #endif
 	assert(rtime >= 0.0);
-
 	s.schedule(this, &intr, rtime);
 }
 

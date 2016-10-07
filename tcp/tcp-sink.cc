@@ -276,10 +276,10 @@ void TcpSink::ack(Packet* opkt)
 	hdr_tcp *otcp = hdr_tcp::access(opkt);
 	hdr_ip *oiph = hdr_ip::access(opkt);
 
-	if( no_dupack && otcp->seqno() > acker_->Seqno()+1) 	// no dupack
+	/*if( no_dupack && otcp->seqno() > acker_->Seqno()+1) 	// no dupack
 	{
 		return;
-	}
+	}*/
 
 	Packet* npkt = allocpkt();
 	// opkt is the "old" packet that was received
@@ -305,7 +305,7 @@ void TcpSink::ack(Packet* opkt)
 
 
 	// get the tcp headers
-	#ifdef SEMITCP ///if "reason" is true, the ACK means acknowledging a single packet
+	/*#ifdef SEMITCP ///if "reason" is true, the ACK means acknowledging a single packet
 	if(otcp->seqno() > acker_->Seqno()+1) {
 		assert(ntcp->reason() == 0);
 		assert(otcp->seqno() != 0);
@@ -314,11 +314,11 @@ void TcpSink::ack(Packet* opkt)
 	} else {
 		ntcp->seqno() = acker_->Seqno(); 	//按序
 	}
-	#else
+	#else*/
 	// get the cumulative sequence number to put in the ACK; this
 	// is just the left edge of the receive window - 1
 	ntcp->seqno() = acker_->Seqno();
-	#endif
+	//#endif
 
 	ntcp->ts() = now; 	// timestamp the packet
 
@@ -362,12 +362,15 @@ void TcpSink::ack(Packet* opkt)
 	add_to_ack(npkt); // the function is used in TcpAsymSink
 
         // Andrei Gurtov
-        acker_->last_ack_sent_ = ntcp->seqno();
+    acker_->last_ack_sent_ = ntcp->seqno();
+	
+	send(npkt, 0);
+	
         // printf("ACK %d ts %f\n", ntcp->seqno(), ntcp->ts_echo());
 	
 	///If the lower layer isn't congested, send the first packet in transport layer down, otherwise buffer the new ACK
 	
-	if (p_to_mac != nullptr && p_to_mac->maxACkQueueSize < ack_q.size())
+	/*if (p_to_mac != nullptr && p_to_mac->maxACkQueueSize < ack_q.size())
 	{
 		p_to_mac->maxACkQueueSize = ack_q.size();
 		p_to_mac->maxACkQueueSizeTime = Scheduler::instance().clock();
@@ -400,12 +403,14 @@ void TcpSink::ack(Packet* opkt)
 		ack_q.push(tmp);
 		
 
-	}
+	}*/
 }
 
 ///Called by lower layer to send ACKs down when the lower layer is not congested
 void TcpSink::send_down()
 { 	//actually it would not be call by application
+	return; 	// nothing to do
+	
 	if(ack_q.size() > 0) {
 		const double now = Scheduler::instance().clock();
 		Packet *pkt = ack_q.front()->ack(); //only need to send the newest ACK

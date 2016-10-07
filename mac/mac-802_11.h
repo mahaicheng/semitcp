@@ -292,6 +292,14 @@ public:
 	int maxACkQueueSize;
 	double maxACkQueueSizeTime;
 	int lastACKQueueSize;
+	
+	double avgSendTime_;
+	double maxSendTime_;
+	double minSendTime_;
+	int sendingDataSeqno_;
+	double receiveTime_;
+	double totalTime_;
+	int totalCount_;	
 
 protected:
 	void	backoffHandler(void);

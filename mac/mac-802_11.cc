@@ -223,6 +223,14 @@ Mac802_11::Mac802_11() :
     maxACkQueueSize(0),
     maxACkQueueSizeTime(0.0),
     lastACKQueueSize(0),
+    
+	avgSendTime_(0.0),
+	maxSendTime_(0.0),
+	minSendTime_(99999999.0),
+	sendingDataSeqno_(0),
+	receiveTime_(0.0),
+	totalTime_(0.0),
+	totalCount_(0),   
 
 /*******MHC DEBUG***********/
 	///End SEMIDEBUG
@@ -310,6 +318,12 @@ printf("     DATA droped:\t%d\n", macmib_.FailedCount);
 printf("  refuse(no CTS):\t%d\n", refuse_other_rts);
 printf(" dead_lock(CTSC):\t%d\n\n", dead_lock);
 
+if (totalCount_ > 0)
+{
+printf("minSendTime:\t%.2f　mS\n", minSendTime_*1000);
+printf("avgSendTime:\t%.2f　mS\n\n", totalTime_*1000 / totalCount_);
+}
+
 double RTS_fail_rate = 0.0;
 double RTS_refuse_rate = 0.0;
 double RTS_CTS_rate = 0.0;
@@ -317,7 +331,7 @@ double DATA_fail_rate = 0.0;
 double all_success_rate = 0.0;
 
 
-if(RTS_send != 0)
+if(RTS_send > 0)
 {
     RTS_fail_rate = (double)macmib_.RTSFailureCount / RTS_send;
 
@@ -658,6 +672,8 @@ Mac802_11::tx_resume()
 		/*
 		 *  Need to send a CTS or ACK.
 		 */
+		if (mhDefer_.busy())
+			mhDefer_.stop();
 		mhDefer_.start(phymib_.getSIFS());
 	} else if(pktRTS_) {
 		if (mhBackoff_.busy() == 0) {
@@ -1111,6 +1127,12 @@ Mac802_11::sendRTS(int dst)
 	struct rts_frame *rf = (struct rts_frame*)p->access(hdr_mac::offset_);
 	
 	assert(pktTx_);
+	if (HDR_CMN(pktTx_)->ptype() == PT_TCP && HDR_CMN(pktTx_)->size() > 300)
+	{
+		sendingDataSeqno_ = HDR_TCP(pktTx_)->seqno();
+		receiveTime_ = Scheduler::instance().clock();
+	}
+	
 	assert(pktRTS_ == 0);
 
 	/*
@@ -2037,6 +2059,29 @@ Mac802_11::recvACK(Packet *p)
 		ssrc_ = 0;
 	else
 		slrc_ = 0;
+	
+	if (HDR_CMN(pktTx_)->ptype() == PT_TCP && HDR_CMN(pktTx_)->size() > 300)
+	{
+		if (sendingDataSeqno_ == HDR_TCP(pktTx_)->seqno())
+		{
+			double now = Scheduler::instance().clock();
+			double interval = now - receiveTime_;
+		
+			maxSendTime_ = std::max(maxSendTime_, interval);
+			minSendTime_ = std::min(minSendTime_, interval);
+		
+			if (avgSendTime_ < 0.0001) 	// first time
+			{
+				avgSendTime_ = interval;
+			}
+			else
+			{
+				avgSendTime_ = avgSendTime_ * 0.875 + interval * 0.125;
+			}
+			totalTime_ += interval;
+			++totalCount_;
+		}
+	}	
 	
 	rst_cw();
 	Packet::free(pktTx_); 
