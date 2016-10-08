@@ -300,6 +300,7 @@ public:
 	double receiveTime_;
 	double totalTime_;
 	int totalCount_;	
+	std::vector<std::pair<double, double>> send_time_vec;
 
 protected:
 	void	backoffHandler(void);
