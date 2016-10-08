@@ -1,4 +1,4 @@
-
+﻿
 /* -*-	Mode:C++; c-basic-offset:8; tab-width:8; indent-tabs-mode:t -*- */
 /*
  * Copyright (c) 1997 Regents of the University of California.
@@ -75,7 +75,8 @@ public:
 
 
 // Cut and Paste from setdest.h   -- Chalermek 12/1/99
-
+namespace mhc
+{
 class vector {
 public:
 	vector(double x = 0.0, double y = 0.0, double z = 0.0) {
@@ -115,6 +116,7 @@ public:
 	double Y;
 	double Z;
 };
+}
 
 // ------------------------
 

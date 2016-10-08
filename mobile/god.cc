@@ -1,4 +1,4 @@
-/* -*-	Mode:C++; c-basic-offset:8; tab-width:8; indent-tabs-mode:t -*-
+﻿/* -*-	Mode:C++; c-basic-offset:8; tab-width:8; indent-tabs-mode:t -*-
  *
  * Copyright (c) 1997 Regents of the University of California.
  * All rights reserved.
@@ -473,9 +473,9 @@ bool God::IsNeighbor(int i, int j)
     return false;
   }
 
-  vector a(mb_node[i]->X(), mb_node[i]->Y(), mb_node[i]->Z());
-  vector b(mb_node[j]->X(), mb_node[j]->Y(), mb_node[j]->Z());
-  vector d = a - b;
+  mhc::vector a(mb_node[i]->X(), mb_node[i]->Y(), mb_node[i]->Z());
+  mhc::vector b(mb_node[j]->X(), mb_node[j]->Y(), mb_node[j]->Z());
+  mhc::vector d = a - b;
 
   if (d.length() < RANGE)
     return true;

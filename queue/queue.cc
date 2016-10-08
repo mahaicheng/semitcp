@@ -69,32 +69,40 @@ int PacketQueue::neighbor_length()
         return count;
     }
 Packet* PacketQueue::deque()
-    {
+{
 	#ifdef QDEBUG
 	printf("%10.9f PacketQueue::%s len_:%d\n", Scheduler::instance().clock(), __FUNCTION__, len_);
 	#endif
 	if(!head_) 	//if head_ == NULL, it also means that local_length is zero
-           	p_to_aodv->send_down(); //从路由层拉数据包下来
-        if (!head_) 
-		{	//no packet to send
-			return 0;
-		}
-        Packet* p = head_;
-        head_= p->next_; // 0 if p == tail_
-    if(p == tail_)
-        head_= tail_= 0;
-        --len_;
-        bytes_ -= hdr_cmn::access(p)->size();
+		p_to_aodv->send_down();
+			
+	if (!head_) 
+	{	//no packet to send
+		return 0;
+	}
+	Packet* p = head_;
+	head_= p->next_; // 0 if p == tail_
+	
+	if(p == tail_)
+		head_= tail_= nullptr;
+
+	--len_;	
+	RecordStatus(How::decr);
+
+	bytes_ -= hdr_cmn::access(p)->size();
+	
+	
 	assert ( p );
 	struct hdr_cmn *ch = HDR_CMN ( p );
 	struct hdr_mac802_11 *mh = HDR_MAC802_11 ( p );
 	struct hdr_ip *ih = HDR_IP ( p );
-    
-	if(local_length()==0)
-	    p_to_aodv->send_down();
 	
-        return p;
-    }
+	if (head_ == nullptr)
+		p_to_aodv->send_down();
+	
+    return p;
+}
+    
 void PacketQueue::remove(Packet* target)
 {
 	for (Packet *pp= 0, *p= head_; p; pp= p, p= p->next_) {
@@ -104,7 +112,10 @@ void PacketQueue::remove(Packet* target)
 				if (p == tail_) 
 					tail_= pp;
 				pp->next_= p->next_;
+				
 				--len_;
+				RecordStatus(How::decr);	
+				
 				bytes_ -= hdr_cmn::access(p)->size();
 			}
 			return;
@@ -127,7 +138,10 @@ void PacketQueue::remove(Packet* pkt, Packet *prev) //XXX: screwy
 			prev->next_ = pkt->next_;
 			if (tail_ == pkt)
 				tail_ = prev;
+			
 			--len_;
+			RecordStatus(How::decr);			
+			
 			bytes_ -= hdr_cmn::access(pkt)->size();
 		}
 	}

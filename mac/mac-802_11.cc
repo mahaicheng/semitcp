@@ -320,9 +320,11 @@ printf(" dead_lock(CTSC):\t%d\n\n", dead_lock);
 
 if (totalCount_ > 0)
 {
-printf("minSendTime:\t%.2f　mS\n", minSendTime_*1000);
-printf("avgSendTime:\t%.2f　mS\n\n", totalTime_*1000 / totalCount_);
+printf("	 minSendTime:\t%.2f　mS\n", minSendTime_*1000);
+printf("	 avgSendTime:\t%.2f　mS\n\n", totalTime_*1000 / totalCount_);
 }
+
+printf("  	  avg_length:\t%.12f\n\n", p_to_prique->avg_length());
 
 double RTS_fail_rate = 0.0;
 double RTS_refuse_rate = 0.0;
@@ -347,17 +349,11 @@ else
 
 DATA_fail_rate = (double)macmib_.ACKFailureCount / DATA_send;
 
-printf("       avg_whole:\t%.2f\n",avg_whole);
-printf("       max_whole:\t%d\n", max_whole);
 printf("   RTS_fail_rate:\t%.2f%%\n", RTS_fail_rate * 100.0);
 printf(" RTS_refuse_rate:\t%.2f%%\n", RTS_refuse_rate * 100.0);
 printf("    RTS_CTS_rate:\t%.2f%%\n", RTS_CTS_rate * 100.0);
 printf("  DATA_fail_rate:\t%.2f%%\n", DATA_fail_rate * 100.0);
 printf("all_success_rate:\t%.2f%%\n\n", all_success_rate * 100.0);
-printf(" maxAckQueueSize:\t\t%d\n", maxACkQueueSize);
-printf("maxACkQueueSizeTime:\t%.2f\n", maxACkQueueSizeTime);
-printf("lastACKQueueSize:\t\t%d\n\n", lastACKQueueSize);
-
 	return TCL_OK;
     }   
 }

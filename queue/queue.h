@@ -37,6 +37,9 @@
 #ifndef ns_queue_h
 #define ns_queue_h
 
+#include<unordered_map>
+#include<vector>
+
 #include "connector.h"
 #include "packet.h"
 #include "ip.h"
@@ -45,10 +48,20 @@ class AODV;
 #endif
 class Packet;
 
+enum class How
+{
+	incr,
+	decr
+};
+
 class PacketQueue : public TclObject {
 public:
 #ifdef SEMITCP
-	PacketQueue() : head_(0), tail_(0), len_(0), bytes_(0), p_to_aodv(0){}
+	PacketQueue() : head_(0), tail_(0), 
+	len_(0), bytes_(0), p_to_aodv(0),
+	prev_time_(0.0), 
+	start_time(0.0), end_time(0.0)
+	{}
 #else
 	PacketQueue() : head_(0), tail_(0), len_(0), bytes_(0) {}
 #endif
@@ -56,6 +69,27 @@ public:
 	int local_length();
 
     int neighbor_length();
+	double avg_length() const
+	{
+		if (intervals.empty())
+			return 0.0;
+		
+		double total_len = 0.0;
+		for (auto pr : intervals)
+		{
+			int queue_len = pr.first;
+			vector<double> interval_vec = pr.second;
+			
+			if (queue_len <= 0 || interval_vec.empty())
+				continue;
+			
+			for (auto d : interval_vec)
+			{
+				total_len += (queue_len * d);
+			}
+		}
+		return total_len / (end_time - start_time);		
+	}
     
 	virtual int byteLength() const { return (bytes_); }
 	virtual Packet* enque(Packet* p) { // Returns previous tail
@@ -66,7 +100,10 @@ public:
 			tail_= p;
 		}
 		tail_->next_= 0;
+		
 		++len_;
+		RecordStatus(How::incr);
+		
 		bytes_ += hdr_cmn::access(p)->size();
 		return pt;
 	}
@@ -98,7 +135,10 @@ public:
 	        if (!head_) tail_ = p;
 	        p->next_ = head_;
 		head_ = p;
+		
 		++len_;
+		RecordStatus(How::incr);
+		
 		bytes_ += hdr_cmn::access(p)->size();
 	}
         void resetIterator() {iter = head_;}
@@ -114,10 +154,40 @@ protected:
 	int len_;		// packet count
 	int bytes_;		// queue size in bytes
 
-
 // MONARCH EXTNS
 private:
 	Packet *iter;
+	double prev_time_;
+	double start_time;
+	double end_time;
+	std::unordered_map<int, std::vector<double>> intervals;
+	
+	void RecordStatus(How how)
+	{
+		double now = Scheduler::instance().clock();
+		if (start_time < 0.0)
+			start_time = now;
+		end_time = now;
+		
+		int prev_len = 0;
+		if (how == How::incr)
+		{
+			prev_len = len_ - 1;
+		}
+		else
+		{
+			prev_len = len_ + 1;
+		}
+			
+		if (intervals.find(prev_len) == intervals.end())
+		{
+			intervals[prev_len] = std::vector<double>();
+		}
+		
+		double interval = now - prev_time_;
+		prev_time_ = now;
+		intervals[prev_len].push_back(interval);		
+	}
 };
 
 class Queue;
@@ -153,6 +223,12 @@ public:
     {
         return pq_->neighbor_length();
     }
+    
+    double avg_length() const
+    {
+		return pq_->avg_length();
+	}
+    
 	int byteLength() { return pq_->byteLength(); }	/* number of bytes *
 						 * currently in packet queue */
 	/* mean utilization, decaying based on util_weight */
