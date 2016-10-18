@@ -154,6 +154,7 @@ protected:
 	double lastreset_; 	/* W.N. used for detecting packets  */
 				/* from previous incarnations */
 	int no_dupack; ///SEMIDEBUG
+	
 	#ifdef SEMITCP
 	Mac802_11* p_to_mac;
 	queue<ack_pkt*> ack_q;

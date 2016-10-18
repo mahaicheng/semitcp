@@ -303,22 +303,7 @@ void TcpSink::ack(Packet* opkt)
 		}
 	}
 
-
-	// get the tcp headers
-	/*#ifdef SEMITCP ///if "reason" is true, the ACK means acknowledging a single packet
-	if(otcp->seqno() > acker_->Seqno()+1) {
-		assert(ntcp->reason() == 0);
-		assert(otcp->seqno() != 0);
-		ntcp->reason() = 1;
-		ntcp->seqno() = otcp->seqno();
-	} else {
-		ntcp->seqno() = acker_->Seqno(); 	//按序
-	}
-	#else*/
-	// get the cumulative sequence number to put in the ACK; this
-	// is just the left edge of the receive window - 1
 	ntcp->seqno() = acker_->Seqno();
-	//#endif
 
 	ntcp->ts() = now; 	// timestamp the packet
 
@@ -364,62 +349,13 @@ void TcpSink::ack(Packet* opkt)
         // Andrei Gurtov
     acker_->last_ack_sent_ = ntcp->seqno();
 	
-	send(npkt, 0);
-	
-        // printf("ACK %d ts %f\n", ntcp->seqno(), ntcp->ts_echo());
-	
-	///If the lower layer isn't congested, send the first packet in transport layer down, otherwise buffer the new ACK
-	
-	/*if (p_to_mac != nullptr && p_to_mac->maxACkQueueSize < ack_q.size())
-	{
-		p_to_mac->maxACkQueueSize = ack_q.size();
-		p_to_mac->maxACkQueueSizeTime = Scheduler::instance().clock();
-	}
-	if (p_to_mac != nullptr)
-		p_to_mac->lastACKQueueSize = ack_q.size();
-		
-	if(!p_to_mac->local_congested()) {
-		if(ack_q.size() > 0) {
-			Packet *pkt = ack_q.front()->ack();
-			hdr_tcp *tcph = hdr_tcp::access(pkt);
-			tcph->ts_echo() = tcph->ts_echo() + (now - ack_q.front()->time());
-			send(pkt, 0);
-			
-			delete ack_q.front();
-			ack_q.pop(); 	//pop_front()
-			
-			ack_pkt *tmp = new ack_pkt(npkt);
-			ack_q.push(tmp); //push_back()
-		} else
-			send(npkt, 0);
-	} else {
-		#define MAXACKQ_LEN 65 ///the size of transport layer queue
-		if(ack_q.size() >= MAXACKQ_LEN) {		
-			drop(ack_q.front()->ack(), "ACK_Q_FULL");
-			delete ack_q.front();
-			ack_q.pop();
-		}
-		ack_pkt *tmp = new ack_pkt(npkt);
-		ack_q.push(tmp);
-		
-
-	}*/
+	send(npkt, 0);	
 }
 
 ///Called by lower layer to send ACKs down when the lower layer is not congested
 void TcpSink::send_down()
 { 	//actually it would not be call by application
 	return; 	// nothing to do
-	
-	if(ack_q.size() > 0) {
-		const double now = Scheduler::instance().clock();
-		Packet *pkt = ack_q.front()->ack(); //only need to send the newest ACK
-		hdr_tcp *tcph = hdr_tcp::access(pkt);
-		tcph->ts_echo() = tcph->ts_echo() + (now - ack_q.front()->time());
-		delete ack_q.front();
-		ack_q.pop();
-		send(pkt, 0); 	// send the newest ACK
-	}
 }
 
 void TcpSink::add_to_ack(Packet*)

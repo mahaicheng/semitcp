@@ -409,11 +409,7 @@ private:
 	PriQueue* p_to_prique;
 	int CALLRT;     //发送多次RTS或者DATA失败后将数据包回退给路由层，路由层重新找路
 	
-/*******MHC DEBUG************/
- 
-    int refuse_other_rts;
-    int dead_lock;
-           
+/*******MHC DEBUG************/          
     int RTS_send;
     int CTS_recv;
     int CTSC_recv;
@@ -427,10 +423,13 @@ private:
     int ACK_send;
 	
 	int RTS_droped;
-       
-	void statistics();
-	double avg_whole;
-    int max_whole;
+	
+	int forward_data_send;	
+	int backward_ack_send;
+	int forward_data_retransmit;	
+	int backward_ack_retransmit;
+	int forward_data_drop;
+	int backward_ack_drop;
 	
 /*******MHC DEBUG***********/
 
