@@ -196,12 +196,14 @@ Mac802_11::Mac802_11() :
 
 /*******MHC DEBUG************/
     RTS_send(0),
+    RTSC_send(0),
     CTS_recv(0),
     CTSC_recv(0),
     DATA_send(0),
     ACK_recv(0),
     
     RTS_recv(0),
+    RTSC_recv(0),
     CTS_send(0),
     CTSC_send(0),
     DATA_recv(0),
@@ -295,7 +297,8 @@ if ( argc ==2 )
     {
 printf("\n--------------------------NODE: %d--------------------\n", index_);
 
-printf("     RTS(C)_send:\t%d\n", RTS_send);
+printf("     	RTS_send:\t%d\n", RTS_send);
+printf("	   RTSC_send:\t%d\n", RTSC_send);
 printf("        CTS_recv:\t%d\n", CTS_recv);
 printf("       CTSC_recv:\t%d\n", CTSC_recv);
 printf("       DATA_send:\t%d\n", DATA_send);
@@ -303,7 +306,8 @@ printf("forward_data_send:\t%d\n", forward_data_send);
 printf("backward_ack_send:\t%d\n", backward_ack_send);
 printf("        ACK_recv:\t%d\n\n", ACK_recv);
 
-printf("     RTS(C)_recv:\t%d\n", RTS_recv);
+printf("     	RTS_recv:\t%d\n", RTS_recv);
+printf("	   RTSC_recv:\t%d\n", RTSC_recv);
 printf("        CTS_send:\t%d\n", CTS_send);
 printf("       CTSC_send:\t%d\n", CTSC_send);
 printf("       DATA_recv:\t%d\n", DATA_recv);
@@ -328,23 +332,31 @@ printf("	 avgSendTime:\t%.2f　mS\n\n", totalTime_*1000 / totalCount_);
 printf("  	  avg_length:\t%.12f\n\n", p_to_prique->avg_length());
 
 double RTS_CTS_rate = 0.0;
+double RTSC_rate = 0.0;
+double CTSC_rate = 0.0;
 double RTS_retransmit_rate = 0.0;
 double forward_data_retransmit_rate = 0.0;
 double RTS_drop_rate = 0.0;
 double forward_data_drop_rate = 0.0;
 double all_success_rate = 0.0;
+double RTS_per_forward_data = 0.0;
 
-if(RTS_send > 0)
+int total_RTS_send = RTSC_send + RTS_send;
+
+if(total_RTS_send > 0)
 {
-    RTS_CTS_rate = (double)(CTS_recv+CTSC_recv) / RTS_send;
+    RTS_CTS_rate = (double)(CTS_recv+CTSC_recv) / total_RTS_send;
+	RTSC_rate = (double)(RTSC_send) / total_RTS_send;
+	
+	if (CTS_send > 0 || CTSC_send > 0)
+		CTSC_rate = (double)(CTSC_send) / (CTS_send + CTSC_send);
+	
 	all_success_rate = (double)ACK_recv / (DATA_send + macmib_.RTSFailureCount);
-	
-	RTS_retransmit_rate = (double)macmib_.RTSFailureCount / RTS_send;
+	RTS_retransmit_rate = (double)macmib_.RTSFailureCount / total_RTS_send;
 	forward_data_retransmit_rate = (double)forward_data_retransmit / forward_data_send;
-	RTS_drop_rate = (double)RTS_droped / RTS_send;
+	RTS_drop_rate = (double)RTS_droped / total_RTS_send;
 	forward_data_drop_rate = (double)forward_data_drop / forward_data_send;
-	
-	printf("RTS_per_forward_data:\t%.2f\n\n", (double)RTS_send / forward_data_send);	
+	RTS_per_forward_data = (double)(total_RTS_send) / forward_data_send;
 }
 else
 {
@@ -352,12 +364,16 @@ else
 }
 
 printf("    RTS_CTS_rate:\t%.2f%%\n", RTS_CTS_rate * 100.0);
+printf(" 	   RTSC_rate:\t%.2f%%\n", RTSC_rate * 100.0);
+printf("	   CTSC_rate:\t%.2f%%\n", CTSC_rate * 100.0);
 printf("all_success_rate:\t%.2f%%\n\n", all_success_rate * 100.0);
 
 printf("RTS_retransmit_rate:\t%.2f%%\n", RTS_retransmit_rate * 100.0);
 printf("forward_data_retransmit_rate:\t%.2f%%\n", forward_data_retransmit_rate * 100.0);
 printf("RTS_drop_rate:\t%.2f%%\n", RTS_drop_rate * 100.0);
 printf("forward_data_drop_rate:\t%.2f%%\n\n", forward_data_drop_rate * 100.0);
+
+printf("RTS_per_forward_data:\t%.2f\n\n", RTS_per_forward_data);	
 
 for (const auto &pr : send_time_vec)
 {
@@ -838,7 +854,7 @@ Mac802_11::send_timer()
 
 		if(cf->cf_fc.fc_order) {///CTSC
 			nb->set_helped_by_me(false);///If fail to recv DATA, reset helped_by_me
-			if(neighbour_congested() && pktPre_ && !pktTx_ && RECEIVER(pktPre_) == RECEIVER(pktCTRL_))
+			if(TotalCongested() && pktPre_ && !pktTx_ && RECEIVER(pktPre_) == RECEIVER(pktCTRL_))
 				restore_tx();
 		}
 	#endif
@@ -1053,11 +1069,19 @@ Mac802_11::check_pktRTS()
 	}
 #ifdef SEMITCP
 	mh->dh_fc.fc_order = false;///RTS
-	if(neighbour_congested())
+	if(TotalCongested())
 		mh->dh_fc.fc_order = true;///RTSC
 #endif
 
-	RTS_send++;
+	if (mh->dh_fc.fc_order == false)
+	{
+		RTS_send++;
+	}
+	else
+	{
+		RTSC_send++;
+	}
+	
 	transmit(pktRTS_, timeout);
 	return 0;
 }
@@ -1810,7 +1834,15 @@ Mac802_11::recvRTS(Packet *p)
 	if(mhDefer_.busy()) 
 		mhDefer_.stop();
 	
-	RTS_recv++;
+	if (HDR_MAC802_11(p)->dh_fc.fc_order == false)
+	{
+		RTS_recv++;
+	}
+	else
+	{
+		RTSC_recv++;
+	}
+	
 	tx_resume();
 	mac_log(p);
 }
@@ -2114,12 +2146,6 @@ Mac802_11::recvACK(Packet *p)
 bool Mac802_11::neighbour_congested()   
 {
 	int pkt_cnt_l2 = p_to_prique->neighbor_length();
-	if(pktTx_ && !HDR_CMN(pktTx_)->control_packet() \
-       && HDR_IP(pktTx_)->saddr() != p_aodv_agent->nodeIndex())
-		pkt_cnt_l2++;
-	if(pktPre_ && !HDR_CMN(pktPre_)->control_packet() \
-       && HDR_IP(pktPre_)->saddr() != p_aodv_agent->nodeIndex())
-		pkt_cnt_l2++;
 	int pkt_total = pkt_cnt_l2 + p_aodv_agent->neighbor_length();
 	int neighborThreshold = p_to_prique->neighborThreshold();
 	
@@ -2128,9 +2154,18 @@ bool Mac802_11::neighbour_congested()
 
 bool Mac802_11::local_congested()   //used by TCP to decide whether push packet or not
 {
-    //just count for the number of packets in the queue and the aodv queue
 	int totalLocal = p_to_prique->local_length() + p_aodv_agent->local_length();
 	return totalLocal >= p_to_prique->localThreshold();
+}
+
+bool Mac802_11::TotalCongested() const
+{
+	int total_length = p_to_prique->DataLength() + p_aodv_agent->DataLength();
+	if (pktTx_ != nullptr && !HDR_CMN(pktTx_)->control_packet())
+	{
+		total_length++;
+	}
+	 return total_length >= 1;
 }
 
 void Mac802_11::overHear( Packet* p )
@@ -2238,7 +2273,7 @@ Mac802_11::defer_rts(Neighbour *nb)
 	const double now = Scheduler::instance().clock();
  {
 	{
-			if(neighbour_congested()) {	//本节点拥塞了，不推迟发送RTS
+			if(TotalCongested()) {	//本节点拥塞了，不推迟发送RTS
 					return false;
 			} else {
 				if(kk < KK && now - nb_congested < round_trip_time)
@@ -2264,7 +2299,7 @@ Mac802_11::refuse( Packet* p )
 	if (rf->rf_fc.fc_subtype == MAC_Subtype_uRTS)///the RTS packet is sent for control packet like RREQ
 		return CTS;
 	bool RTSC = rf->rf_fc.fc_order;
-	bool me_congested = neighbour_congested();
+	bool me_congested = TotalCongested();
 	
 	if(pkt) {   //have data packet to send
 		if(!HDR_CMN(pkt)->control_packet())

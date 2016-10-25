@@ -69,6 +69,7 @@ public:
 	int local_length();
 
     int neighbor_length();
+	int DataLength() const;
 	double avg_length() const
 	{
 		if (intervals.empty())
@@ -223,7 +224,10 @@ public:
     {
         return pq_->neighbor_length();
     }
-    
+    int DataLength() const
+    {
+		return pq_->DataLength();
+	}
     double avg_length() const
     {
 		return pq_->avg_length();

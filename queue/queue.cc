@@ -44,30 +44,43 @@ static const char rcsid[] =
 #include "aodv/aodv.h"
 
 int PacketQueue::local_length()
-    {
-        int count = 0;
-        for(Packet* p = head_; p != NULL; p = p->next_)
-        {    
-	    //if(!HDR_CMN(p)->control_packet() && HDR_CMN(p)->num_forwards() != 0)
-		if(HDR_IP(p)->saddr() == p_to_aodv->nodeIndex())
-		    count++;
+{
+	int count = 0;
+	for(Packet* p = head_; p != NULL; p = p->next_)
+	{    
+		if(HDR_IP(p)->saddr() == p_to_aodv->nodeIndex() && !HDR_CMN(p)->control_packet())
+		{
+			++count;
+		}
 	}
-	//printf("nodeIndex: %d\tQueue::local_length: %d\n", \
-		p_to_aodv->nodeIndex(), count);
-        return count;
-    }
-int PacketQueue::neighbor_length()
- {
-        int count = 0;
-        for(Packet* p = head_; p != NULL; p = p->next_)
-        {
-	    	    	if(HDR_IP(p)->saddr() != p_to_aodv->nodeIndex())
-		    	++count;
+	return count;
+}
+int PacketQueue::neighbor_length() 
+{
+	int count = 0;
+	for(Packet* p = head_; p != NULL; p = p->next_)
+	{
+		if(HDR_IP(p)->saddr() != p_to_aodv->nodeIndex() && !HDR_CMN(p)->control_packet())
+		{
+			++count;
+		}
 	}
-	//printf("nodeIndex: %d\tQueue::neighbor_length: %d\n", \
-		p_to_aodv->nodeIndex(), count);
-        return count;
-    }
+	return count;
+}
+
+int PacketQueue::DataLength() const
+{
+	int count = 0;
+	for (Packet *curr = head_; curr != nullptr; curr = curr->next_)
+	{
+		if (!HDR_CMN(curr)->control_packet())
+		{
+			count++;
+		}
+	}
+	return count;
+}
+
 Packet* PacketQueue::deque()
 {
 	#ifdef QDEBUG

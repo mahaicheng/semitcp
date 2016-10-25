@@ -49,31 +49,43 @@ The AODV code developed by the CMU/MONARCH group was optimized and tuned by Sami
 
 class aodv_rqueue : public Connector {
  public:
-         int neighbor_length()
-        {
-          int packetNumber = 0;
-          for(Packet* p = head_; p; p = p->next_) 
-          {
-            nsaddr_t ip = HDR_IP(p)->saddr();
-              if(ip != nodeIndex)
-                  packetNumber++;
-          }
-          //printf("nodeIndex: %d\taodv::neighbor_lenth: %d\n", nodeIndex, packetNumber);
-          return packetNumber;
-        }
+int neighbor_length()
+{
+	int packetNumber = 0;
+	for(Packet* p = head_; p; p = p->next_) 
+	{
+		nsaddr_t ip = HDR_IP(p)->saddr();
+		if(ip != nodeIndex && !HDR_CMN(p)->control_packet())
+			packetNumber++;
+	}
+	return packetNumber;
+}
         
-        int local_length()
-        {
-           int packetNumber = 0;
-          for(Packet* p = head_; p; p = p->next_) 
-          {
-            nsaddr_t ip = HDR_IP(p)->saddr();
-              if(ip == nodeIndex)
-                  packetNumber++;
-          }
-          //printf("nodeIndex: %d\taodv::local_lenth: %d\n", nodeIndex, packetNumber);
-          return packetNumber;
-        }
+int local_length()
+{
+	int packetNumber = 0;
+	for(Packet* p = head_; p; p = p->next_) 
+	{
+		nsaddr_t ip = HDR_IP(p)->saddr();
+		if(ip == nodeIndex && !HDR_CMN(p)->control_packet())
+			packetNumber++;
+	}
+	return packetNumber;
+}
+
+int DataLength() const
+{
+	int count = 0;
+	for (Packet *curr = head_; curr != nullptr; curr = curr->next_)
+	{
+		if (!HDR_CMN(curr)->control_packet())
+		{
+			count++;
+		}
+	}
+	return count;
+}
+
         int length_all()
         {
             return len_;

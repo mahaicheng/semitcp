@@ -223,6 +223,10 @@ class AODV: public Agent {
         {//计算来自本节点的数据包个数
             return rqueue.local_length();
         }
+        int DataLength() const
+        {
+			return rqueue.DataLength();
+		}
         int length_all()
         {
             return rqueue.length_all();

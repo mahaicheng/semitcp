@@ -402,6 +402,7 @@ private:
 public:
 	bool neighbour_congested();     //seperately consider these packets
     bool local_congested();
+	bool TotalCongested() const;
 private:
 	void print_to_trace(Packet* p, char* function = NULL);
 
@@ -411,12 +412,14 @@ private:
 	
 /*******MHC DEBUG************/          
     int RTS_send;
+	int RTSC_send;
     int CTS_recv;
     int CTSC_recv;
     int DATA_send;
     int ACK_recv;
     
     int RTS_recv;
+	int RTSC_recv;
     int CTS_send;
     int CTSC_send;
     int DATA_recv;
