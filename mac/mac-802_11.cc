@@ -372,8 +372,10 @@ printf("RTS_retransmit_rate:\t%.2f%%\n", RTS_retransmit_rate * 100.0);
 printf("forward_data_retransmit_rate:\t%.2f%%\n", forward_data_retransmit_rate * 100.0);
 printf("RTS_drop_rate:\t%.2f%%\n", RTS_drop_rate * 100.0);
 printf("forward_data_drop_rate:\t%.2f%%\n\n", forward_data_drop_rate * 100.0);
-
-printf("RTS_per_forward_data:\t%.2f\n\n", RTS_per_forward_data);	
+if (RTS_per_forward_data > 0)
+{
+	printf("RTS_per_forward_data:\t%.2f\n\n", RTS_per_forward_data);	
+}
 
 for (const auto &pr : send_time_vec)
 {
